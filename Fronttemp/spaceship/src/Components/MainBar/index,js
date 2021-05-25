@@ -1,0 +1,8 @@
+import styled, { createGlobalStyle } from "styled-components";
+import { Fragment } from "react";
+const MainBar = styled.div`
+  background-color: red;
+  width: 70vw;
+  height: 30vh;
+`;
+export {MainBar};

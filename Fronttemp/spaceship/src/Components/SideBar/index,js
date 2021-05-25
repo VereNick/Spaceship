@@ -1,0 +1,8 @@
+import styled, { createGlobalStyle } from "styled-components";
+import { Fragment } from "react";
+const SideBar = styled.div`
+  background-color: yellow;
+  width: 30vw;
+  height: 40vh;
+`;
+export {SideBar};
