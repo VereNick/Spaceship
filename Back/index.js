@@ -3,7 +3,7 @@ var app = express();
 var server = require("http").createServer(app);
 var io = require("socket.io")(server, {
   cors: {
-    origin: "http://127.0.0.1:8080",
+    origin: "http://127.0.0.1:3000",
     methods: ["GET", "POST", "DELETE", "PUT", "POST", "UPDATE"],
     credentials: true,
   },
@@ -27,7 +27,7 @@ app.get("/", (req, res, next) => {
   res.status(200).send("ok");
 });
 
-server.listen(3000);
+server.listen(3002);
 console.log(123);
 users = [];
 connections = [];

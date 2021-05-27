@@ -1,36 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import styled, { createGlobalStyle } from "styled-components";
-import { Fragment } from "react";
-import {Header} from "./Components/Header";
-import {MainBar} from "./Components/MainBar";
-import {SideBar} from "./Components/SideBar";
-const GlobalStyle = createGlobalStyle`
-    body{
-        margin: 0;
-        padding: 0;
-    }
-`;
-const FlexDiv = styled.div`
-    display: flex;
-`;
-const App = () => (
-  <FlexDiv>
-    <GlobalStyle />
-    <div>
-      <Header>
-      </Header>
-      <MainBar>
-      </MainBar>
-    </div>
-    <SideBar>
-    </SideBar>
-  </FlexDiv>
-);
+import {App} from './Components/App';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App/>
+    <App />
   </React.StrictMode>,
   document.getElementById('root')
 );

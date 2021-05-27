@@ -1,26 +1,27 @@
-import styled, { createGlobalStyle } from "styled-components";
+import { createGlobalStyle } from "styled-components";
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
+import { Menu } from "../Menu";
+import { Game } from "../Game";
 import { Fragment } from "react";
-import {Header} from "../Header";
 const GlobalStyle = createGlobalStyle`
     body{
         margin: 0;
         padding: 0;
     }
 `;
-const FlexDiv = styled.div`
-    display: flex;
-`;
 const App = () => (
-  <FlexDiv>
+  <Fragment>
     <GlobalStyle />
-    <div>
-      <Header>
-      </Header>
-      <MainBar>
-      </MainBar>
-    </div>
-    <SideBar>
-    </SideBar>
-  </FlexDiv>
+    <Router>
+      <Switch>
+        <Route path="/game/:id">
+          <Game />
+        </Route>
+        <Route path="/">
+          <Menu />
+        </Route>
+      </Switch>
+    </Router>
+  </Fragment>
 );
 export { App };
