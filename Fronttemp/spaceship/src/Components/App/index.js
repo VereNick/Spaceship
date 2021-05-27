@@ -7,6 +7,7 @@ const GlobalStyle = createGlobalStyle`
     body{
         margin: 0;
         padding: 0;
+        overflow: hidden;
     }
 `;
 const App = () => (
@@ -14,8 +15,8 @@ const App = () => (
     <GlobalStyle />
     <Router>
       <Switch>
-        <Route path="/game/:id">
-          <Game />
+        <Route path="/game/">
+          <Game/>
         </Route>
         <Route path="/">
           <Menu />

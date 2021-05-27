@@ -1,5 +1,4 @@
-import styled, {createGlobalStyle} from "styled-components";
-import {Fragment} from "react";
+import styled from "styled-components";
 const Header = styled.div`
     background-color: gray;
     width: 80vw;

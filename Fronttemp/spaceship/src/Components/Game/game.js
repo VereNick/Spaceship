@@ -1,75 +1,247 @@
-import socketIOClient from "socket.io-client";
-export default function (canvas) {
-    
-  function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min) + min);
-  }
-  
-  var socketStatus = "disconnected";
-  var socket;
+import { io } from "socket.io-client";
+import shipImg from "./ship.png";
+import shipFireImg from "./shipfire.png";
 
-  var canvas = document.querySelector("canvas");
-  var ctx = canvas.getContext("2d");
-  var now = Date.now();
-  var last = Date.now();
-  var keys = {};
-  var fire = 0;
-  var star = {
-    x: 0,
-    y: 0,
-    size: 1,
-  };
-  var stars = [];
-  var numstars = 300;
-  var ships = [];
-  var ship = {
-    id: Math.random().toString(16).slice(2),
-    x: getRandomInt(100, window.innerWidth - 100),
-    y: getRandomInt(100, window.innerHeight - 100),
-    dx: 0,
-    dy: 0,
-    ax: 500,
-    ay: 500,
-    maxspeed: 500,
-    angle: 0,
-    angleturncoff: 0.01,
-    size: 60,
-    fire: 0,
-  };
-  socket = socketIOClient.connect("localhost:3000");
+export default function StartGame(canvas) {
+  const maph = (canvas.height = 1000);
+  const mapw = (canvas.width = 1500);
+  const ctx = canvas.getContext("2d");
+  let last = Date.now();
+  let keys = {};
+  let stars = [];
+  const numstars = 300;
+  let ships = [];
+  class Star {
+    constructor(xx, yy, ss) {
+      this.x = xx || 100;
+      this.y = yy || 100;
+      this.size = ss || 1;
+    }
+    render() {
+      ctx.fillStyle = "#fffff6";
+      ctx.shadowBlur = 5;
+      ctx.shadowColor = "yellow";
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    move(dt) {
+      this.x = ((this.x + 10 + 5 * dt) % (canvas.width + 20)) - 10;
+      this.y = ((this.y + 10 + 5 * dt) % (canvas.height + 20)) - 10;
+    }
+  }
+  class Ship {
+    constructor() {
+      this.id = Math.random().toString(16).slice(2);
+      this.x = getRandomInt(100, window.innerWidth - 100);
+      this.y = getRandomInt(100, window.innerHeight - 100);
+      this.dx = 0;
+      this.dy = 0;
+      this.ax = 500;
+      this.ay = 500;
+      this.maxspeed = 500;
+      this.angle = 0;
+      this.angleturncoff = 0.007;
+      this.size = 60;
+      this.fire = false;
+    }
+    moveForward(dt) {
+      const newx = this.dx + Math.sin(this.angle) * this.ax * dt;
+      const newy = this.dy + Math.cos(this.angle) * this.ay * dt;
+      const hyp = Math.sqrt(newx * newx + newy * newy);
+      if (hyp < this.maxspeed) {
+        this.dx += Math.sin(this.angle) * this.ax * dt;
+        this.dy += Math.cos(this.angle) * this.ay * dt;
+      }
+    }
+    stop(dt) {
+      const hyp = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+      let curanglex = 0;
+      if (hyp !== 0) curanglex = Math.asin(this.dx / hyp);
+      let curangley = 0;
+      if (hyp !== 0) curangley = Math.acos(this.dy / hyp);
+      this.dx = this.dx - Math.sin(curanglex) * this.ax * dt;
+      this.dy = this.dy - Math.cos(curangley) * this.ay * dt;
+      if (
+        (this.dx < 0 && Math.sin(curanglex) > 0) ||
+        (this.dx > 0 && Math.sin(curanglex) < 0)
+      )
+        this.dx = 0;
+      if (
+        (this.dy < 0 && Math.cos(curangley) > 0) ||
+        (this.dy > 0 && Math.cos(curangley) < 0)
+      )
+        this.dy = 0;
+    }
+    turn(dt, direction) {
+      const mult = direction == "Left" ? -1 : 1;
+      this.angle +=
+        Math.sqrt(this.dx * this.dx + this.dy * this.dy) *
+        this.angleturncoff *
+        dt *
+        mult;
+    }
+    update(dt) {
+      this.x += this.dx * dt;
+      this.y -= this.dy * dt;
+      if (this.x < -this.size) this.x = mapw + this.size / 2;
+      if (this.y < -this.size) this.y = maph;
+      if (this.x > mapw + this.size / 2) this.x = -this.size;
+      if (this.y > maph) this.y = -this.size;
+    }
+    render() {
+      ctx.translate(this.x + this.size / 2, this.y + this.size / 2);
+      ctx.rotate(this.angle);
+      ctx.drawImage(
+        this.fire === true ? shipfireim : shipim,
+        -this.size / 2,
+        -this.size / 2,
+        this.size,
+        this.size
+      );
+      ctx.rotate(-this.angle);
+      ctx.translate(-this.x - this.size / 2, -this.y - this.size / 2);
+      for (let i = 0; i < ships.length; i++) {
+        ctx.translate(
+          ships[i].x + ships[i].size / 2,
+          ships[i].y + ships[i].size / 2
+        );
+        ctx.rotate(ships[i].angle);
+        ctx.drawImage(
+          ships[i].fire === true ? shipfireim : shipim,
+          -ships[i].size / 2,
+          -ships[i].size / 2,
+          ships[i].size,
+          ships[i].size
+        );
+        // Top
+        ctx.drawImage(
+          ships[i].fire === true ? shipfireim : shipim,
+          -ships[i].size / 2,
+          -ships[i].size / 2 - maph + 40,
+          ships[i].size,
+          ships[i].size
+        );
+        // // Down
+        // ctx.drawImage(
+        //   ships[i].fire === true ? shipfireim : shipim,
+        //   -ships[i].size / 2,
+        //   -ships[i].size / 2,
+        //   ships[i].size,
+        //   ships[i].size
+        // );
+        // // Left
+        // ctx.drawImage(
+        //   ships[i].fire === true ? shipfireim : shipim,
+        //   -ships[i].size / 2,
+        //   -ships[i].size / 2,
+        //   ships[i].size,
+        //   ships[i].size
+        // );
+        // // Right
+        // ctx.drawImage(
+        //   ships[i].fire === true ? shipfireim : shipim,
+        //   -ships[i].size / 2,
+        //   -ships[i].size / 2,
+        //   ships[i].size,
+        //   ships[i].size
+        // );
+        ctx.rotate(-ships[i].angle);
+        ctx.translate(
+          -ships[i].x - ships[i].size / 2,
+          -ships[i].y - ships[i].size / 2
+        );
+      }
+    }
+  }
+  const ship = new Ship();
+  const socket = io.connect("localhost:3002", { transports: ["websocket"] });
   socket.emit("login", ship);
   socket.on("update", function (entity) {
-    if (entity.id != ship.id) {
+    if (entity.id !== ship.id) {
       console.log(entity);
       ships.push(entity);
     }
   });
 
-  var shipim = new Image(712, 924);
-  shipim.src = "ship.png";
-  var shipfireim = new Image(712, 924);
-  shipfireim.src = "shipfire.png";
+  let shipim = new Image(712, 924);
+  shipim.src = shipImg;
+  let shipfireim = new Image(712, 924);
+  shipfireim.src = shipFireImg;
+  //ship.x = canvas.width / 2 - 75;
+  //ship.y = canvas.height - 300;
+  for (let i = 0; i < numstars; i++) {
+    let xx = getRandomInt(1, mapw);
+    let yy = getRandomInt(1, maph);
+    let ss = getRandomInt(1, 5);
+    stars.push(new Star(xx, yy, ss));
+  }
+  function game() {
+    const now = Date.now();
+    const dt = (now - last) / 1000;
+    update(dt);
+    render();
+    last = now;
+    requestAnimFrame(game);
+  }
+  function update(dt) {
+    if (keyDown("Down")) {
+      ship.stop(dt);
+    }
+    if (keyDown("Up")) {
+      ship.moveForward(dt);
+      ship.fire = true;
+    } else ship.fire = false;
+    if (keyDown("Left")) {
+      ship.turn(dt, "Left");
+    }
+    if (keyDown("Right")) {
+      ship.turn(dt, "Right");
+    }
+    ship.update(dt);
+
+    // Передвижение звезд
+    for (let i = 0; i < numstars; i++) {
+      stars[i].move(dt);
+    }
+  }
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < numstars; i++) {
+      stars[i].render();
+    }
+    ship.render();
+  }
+  let requestAnimFrame = (function () {
+    return window.requestAnimationFrame;
+  })();
+  function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min) + min);
+  }
   function setKey(event, status) {
-    var code = event.keyCode;
-    var key;
-    if (code == 32) {
+    let code = event.keyCode;
+    let key;
+    if (code === 32) {
       key = "Space";
-    } else if (code == 37) {
+    } else if (code === 37) {
       key = "Left";
-    } else if (code == 38) {
+    } else if (code === 38) {
       key = "Up";
-    } else if (code == 39) {
+    } else if (code === 39) {
       key = "Right";
-    } else if (code == 40) {
+    } else if (code === 40) {
       key = "Down";
     } else {
       key = String.fromCharCode(code);
     }
     keys[key] = status;
   }
-
+  function keyDown(key) {
+    return keys[key];
+  }
   document.addEventListener("keydown", function (e) {
     setKey(e, true);
   });
@@ -79,134 +251,5 @@ export default function (canvas) {
   document.addEventListener("blur", function () {
     keys = {};
   });
-  function keyDown(key) {
-    return keys[key];
-  }
-  window.addEventListener("resize", function () {
-    canvas.height = window.innerHeight;
-    canvas.width = window.innerWidth;
-  });
-  canvas.height = window.innerHeight;
-  canvas.width = window.innerWidth;
-  //ship.x = canvas.width / 2 - 75;
-  //ship.y = canvas.height - 300;
-  for (var i = 0; i < numstars; i++) {
-    var xx = getRandomInt(1, window.innerWidth);
-    var yy = getRandomInt(1, window.innerHeight);
-    var ss = getRandomInt(1, 5);
-    star = {
-      x: xx,
-      y: yy,
-      size: ss,
-    };
-    stars.push(star);
-  }
-  function game() {
-    var now = Date.now();
-    var dt = (now - last) / 1000;
-    update(dt);
-    render();
-    last = now;
-    requestAnimFrame(game);
-  }
-  function update(dt) {
-    if (keyDown("Down")) {
-      var hyp = Math.sqrt(ship.dx * ship.dx + ship.dy * ship.dy);
-      var curanglex = 0;
-      if (hyp != 0) curanglex = Math.asin(ship.dx / hyp);
-      var curangley = 0;
-      if (hyp != 0) curangley = Math.acos(ship.dy / hyp);
-      ship.dx = ship.dx - Math.sin(curanglex) * ship.ax * dt;
-      ship.dy = ship.dy - Math.cos(curangley) * ship.ay * dt;
-      if (
-        (ship.dx < 0 && Math.sin(curanglex) > 0) ||
-        (ship.dx > 0 && Math.sin(curanglex) < 0)
-      )
-        ship.dx = 0;
-      if (
-        (ship.dy < 0 && Math.cos(curangley) > 0) ||
-        (ship.dy > 0 && Math.cos(curangley) < 0)
-      )
-        ship.dy = 0;
-    }
-    if (keyDown("Up")) {
-      var newx = ship.dx + Math.sin(ship.angle) * ship.ax * dt;
-      var newy = ship.dy + Math.cos(ship.angle) * ship.ay * dt;
-      var hyp = Math.sqrt(newx * newx + newy * newy);
-      if (hyp < ship.maxspeed) {
-        ship.dx += Math.sin(ship.angle) * ship.ax * dt;
-        ship.dy += Math.cos(ship.angle) * ship.ay * dt;
-      }
-      ship.fire = 1;
-    } else ship.fire = 0;
-    if (keyDown("Left")) {
-      ship.angle -=
-        Math.sqrt(ship.dx * ship.dx + ship.dy * ship.dy) *
-        ship.angleturncoff *
-        dt;
-    }
-    if (keyDown("Right")) {
-      ship.angle +=
-        Math.sqrt(ship.dx * ship.dx + ship.dy * ship.dy) *
-        ship.angleturncoff *
-        dt;
-    }
-    ship.x += ship.dx * dt;
-    ship.y -= ship.dy * dt;
-
-    // Передвижение
-    for (var i = 0; i < numstars; i++) {
-      stars[i].x = ((stars[i].x + 10 + 5 * dt) % (canvas.width + 20)) - 10;
-      stars[i].y = ((stars[i].y + 10 + 5 * dt) % (canvas.height + 20)) - 10;
-    }
-  }
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#fffff6";
-    ctx.shadowBlur = 5;
-    ctx.shadowColor = "yellow";
-    for (var i = 0; i < numstars; i++) {
-      ctx.beginPath();
-      ctx.arc(stars[i].x, stars[i].y, stars[i].size, 0, 2 * Math.PI);
-      ctx.fill();
-    }
-    ctx.shadowBlur = 0;
-
-    ctx.translate(ship.x + ship.size / 2, ship.y + ship.size / 2);
-    ctx.rotate(ship.angle);
-    ctx.drawImage(
-      ship.fire == 1 ? shipfireim : shipim,
-      -ship.size / 2,
-      -ship.size / 2,
-      ship.size,
-      ship.size
-    );
-    ctx.rotate(-ship.angle);
-    ctx.translate(-ship.x - ship.size / 2, -ship.y - ship.size / 2);
-
-    for (var i = 0; i < ships.length; i++) {
-      ctx.translate(
-        ships[i].x + ships[i].size / 2,
-        ships[i].y + ships[i].size / 2
-      );
-      ctx.rotate(ships[i].angle);
-      ctx.drawImage(
-        ships[i].fire == 1 ? shipfireim : shipim,
-        -ships[i].size / 2,
-        -ships[i].size / 2,
-        ships[i].size,
-        ships[i].size
-      );
-      ctx.rotate(-ships[i].angle);
-      ctx.translate(
-        -ships[i].x - ships[i].size / 2,
-        -ships[i].y - ships[i].size / 2
-      );
-    }
-  }
-
-  var requestAnimFrame = (function () {
-    return window.requestAnimationFrame;
-  })();
   game();
 }

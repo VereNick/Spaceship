@@ -1,5 +1,4 @@
-import styled, { createGlobalStyle } from "styled-components";
-import { Component, Fragment } from "react";
+import styled from "styled-components";
 import { Link } from "react-router-dom";
 const SideBarer = styled.ul`
   background-color: lightgoldenrodyellow;

@@ -1,5 +1,4 @@
-import styled, { createGlobalStyle } from "styled-components";
-import { Fragment } from "react";
+import styled from "styled-components";
 const MainBar = styled.div`
   background-color: lightblue;
   width: 80vw;

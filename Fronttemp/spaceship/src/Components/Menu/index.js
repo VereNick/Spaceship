@@ -1,4 +1,4 @@
-import styled, { createGlobalStyle } from "styled-components";
+import styled from "styled-components";
 import {Header} from "../Header";
 import {MainBar} from "../MainBar";
 import {SideBar} from "../SideBar";

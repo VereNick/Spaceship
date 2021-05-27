@@ -41,6 +41,6 @@ io.on("connection", function (socket) {
     users.push(ship);
     connections.push(socket);
     io.sockets.emit("update", ship);
-    //console.log(ship);
+    console.log(ship);
   });
 });
